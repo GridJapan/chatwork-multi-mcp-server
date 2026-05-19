@@ -66,10 +66,46 @@ export class ChatworkClient {
   }
 }
 
-export function chatworkClient() {
-  const chatworkApiToken = process.env['CHATWORK_API_TOKEN'];
-  if (!chatworkApiToken) {
-    throw new Error('CHATWORK_API_TOKEN is not set');
+function buildClientMap(): Map<string, ChatworkClient> {
+  const map = new Map<string, ChatworkClient>();
+
+  const defaultToken = process.env['CHATWORK_API_TOKEN'];
+  if (defaultToken) {
+    map.set('default', new ChatworkClient(defaultToken));
   }
-  return new ChatworkClient(chatworkApiToken);
+
+  const accounts = process.env['CHATWORK_ACCOUNTS'] ?? '';
+  for (const rawEntry of accounts.split(',')) {
+    const entry = rawEntry.trim();
+    if (!entry) {
+      continue;
+    }
+
+    const separatorIndex = entry.indexOf(':');
+    if (separatorIndex === -1) {
+      continue;
+    }
+
+    const name = entry.slice(0, separatorIndex).trim();
+    const token = entry.slice(separatorIndex + 1).trim();
+    if (name && token) {
+      map.set(name, new ChatworkClient(token));
+    }
+  }
+
+  return map;
+}
+
+export function chatworkClient(accountId?: string): ChatworkClient {
+  const key = accountId ?? 'default';
+  const client = buildClientMap().get(key);
+  if (!client) {
+    throw new Error(`Account '${key}' not found`);
+  }
+
+  return client;
+}
+
+export function listAccounts(): string[] {
+  return [...buildClientMap().keys()];
 }

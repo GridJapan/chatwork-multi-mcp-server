@@ -1,5 +1,12 @@
 import { z } from 'zod';
 
+const accountIdSchema = z
+  .string()
+  .optional()
+  .describe(
+    '使用するアカウントID。省略時はデフォルトアカウント（CHATWORK_API_TOKEN）を使用。',
+  );
+
 /** @see https://developer.chatwork.com/reference/get-my-tasks */
 export const listMyTasksParamsSchema = z
   .object({
@@ -161,6 +168,7 @@ export const listRoomMessagesParamsSchema = z
 /** @see https://developer.chatwork.com/reference/post-rooms-room_id-messages */
 export const postRoomMessageParamsSchema = z
   .object({
+    account_id: accountIdSchema,
     path: z.object({
       room_id: z.number().int().describe('ルームID'),
     }),
@@ -180,6 +188,7 @@ export const postRoomMessageParamsSchema = z
 /** @see https://developer.chatwork.com/reference/put-rooms-room_id-messages-read */
 export const readRoomMessagesParamsSchema = z
   .object({
+    account_id: accountIdSchema,
     path: z.object({
       room_id: z.number().int().describe('ルームID'),
     }),
@@ -192,6 +201,7 @@ export const readRoomMessagesParamsSchema = z
 /** @see https://developer.chatwork.com/reference/put-rooms-room_id-messages-unread */
 export const unreadRoomMessageParamsSchema = z
   .object({
+    account_id: accountIdSchema,
     path: z.object({
       room_id: z.number().int().describe('ルームID'),
     }),
@@ -214,6 +224,7 @@ export const getRoomMessageParamsSchema = z
 /** @see https://developer.chatwork.com/reference/put-rooms-room_id-messages-message_id */
 export const updateRoomMessageParamsSchema = z
   .object({
+    account_id: accountIdSchema,
     path: z.object({
       room_id: z.number().int().describe('ルームID'),
       message_id: z.string().describe('メッセージID'),
@@ -227,6 +238,7 @@ export const updateRoomMessageParamsSchema = z
 /** @see https://developer.chatwork.com/reference/delete-rooms-room_id-messages-message_id */
 export const deleteRoomMessageParamsSchema = z
   .object({
+    account_id: accountIdSchema,
     path: z.object({
       room_id: z.number().int().describe('ルームID'),
       message_id: z.string().describe('メッセージID'),
@@ -262,6 +274,7 @@ export const listRoomTasksParamsSchema = z
 /** @see https://developer.chatwork.com/reference/post-rooms-room_id-tasks */
 export const createRoomTaskParamsSchema = z
   .object({
+    account_id: accountIdSchema,
     path: z.object({
       room_id: z.number().int().describe('ルームID'),
     }),
@@ -291,6 +304,7 @@ export const getRoomTaskParamsSchema = z
 /** @see https://developer.chatwork.com/reference/put-rooms-room_id-tasks-task_id-status */
 export const updateRoomTasksStatusParamsSchema = z
   .object({
+    account_id: accountIdSchema,
     path: z.object({
       room_id: z.number().int().describe('ルームID'),
       task_id: z.number().int().describe('タスクID'),

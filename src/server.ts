@@ -1,4 +1,5 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { listAccounts } from './chatworkClient';
 import {
   acceptIncomingRequestParamsSchema,
   createRoomLinkParamsSchema,
@@ -85,6 +86,13 @@ server.tool(
   listContacts,
 );
 server.tool('list_rooms', 'チャット一覧を取得します。', listRooms);
+server.tool(
+  'list_accounts',
+  '利用可能なChatworkアカウントID一覧を返します。',
+  () => ({
+    content: [{ type: 'text', text: listAccounts().join('\n') }],
+  }),
+);
 server.tool(
   'create_room',
   '新しいグループチャットを作成します。',

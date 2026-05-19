@@ -226,7 +226,7 @@ export const listRoomMessages = (
 export const postRoomMessage = (
   req: z.infer<typeof postRoomMessageParamsSchema>,
 ) =>
-  chatworkClient()
+  chatworkClient(req.account_id)
     .request({
       path: `/rooms/${req.path.room_id}/messages`,
       method: 'POST',
@@ -238,7 +238,7 @@ export const postRoomMessage = (
 export const readRoomMessage = (
   req: z.infer<typeof readRoomMessagesParamsSchema>,
 ) =>
-  chatworkClient()
+  chatworkClient(req.account_id)
     .request({
       path: `/rooms/${req.path.room_id}/messages/read`,
       method: 'PUT',
@@ -250,7 +250,7 @@ export const readRoomMessage = (
 export const unreadRoomMessage = (
   req: z.infer<typeof unreadRoomMessageParamsSchema>,
 ) =>
-  chatworkClient()
+  chatworkClient(req.account_id)
     .request({
       path: `/rooms/${req.path.room_id}/messages/unread`,
       method: 'PUT',
@@ -274,7 +274,7 @@ export const getRoomMessage = (
 export const updateRoomMessage = (
   req: z.infer<typeof updateRoomMessageParamsSchema>,
 ) =>
-  chatworkClient()
+  chatworkClient(req.account_id)
     .request({
       path: `/rooms/${req.path.room_id}/messages/${req.path.message_id}`,
       method: 'PUT',
@@ -286,7 +286,7 @@ export const updateRoomMessage = (
 export const deleteRoomMessage = (
   req: z.infer<typeof deleteRoomMessageParamsSchema>,
 ) =>
-  chatworkClient()
+  chatworkClient(req.account_id)
     .request({
       path: `/rooms/${req.path.room_id}/messages/${req.path.message_id}`,
       method: 'DELETE',
@@ -308,7 +308,7 @@ export const listRoomTasks = (req: z.infer<typeof listRoomTasksParamsSchema>) =>
 export const createRoomTask = (
   req: z.infer<typeof createRoomTaskParamsSchema>,
 ) =>
-  chatworkClient()
+  chatworkClient(req.account_id)
     .request({
       path: `/rooms/${req.path.room_id}/tasks`,
       method: 'POST',
@@ -330,7 +330,7 @@ export const getRoomTask = (req: z.infer<typeof getRoomTaskParamsSchema>) =>
 export const updateRoomTaskStatus = (
   req: z.infer<typeof updateRoomTasksStatusParamsSchema>,
 ) =>
-  chatworkClient()
+  chatworkClient(req.account_id)
     .request({
       path: `/rooms/${req.path.room_id}/tasks/${req.path.task_id}/status`,
       method: 'PUT',
