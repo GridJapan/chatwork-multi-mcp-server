@@ -1,19 +1,87 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { listAccounts } from './chatworkClient';
 import {
+  acceptIncomingRequestParamsSchema,
+  createRoomLinkParamsSchema,
+  createRoomParamsSchema,
+  createRoomTaskParamsSchema,
+  deleteOrLeaveRoomParamsSchema,
+  deleteRoomLinkParamsSchema,
+  deleteRoomMessageParamsSchema,
+  getRoomFileParamsSchema,
+  getRoomLinkParamsSchema,
+  getRoomMessageParamsSchema,
   getRoomParamsSchema,
+  getRoomTaskParamsSchema,
+  listMyTasksParamsSchema,
+  listRoomFilesParamsSchema,
+  listRoomMembersParamsSchema,
   listRoomMessagesParamsSchema,
   listRoomsParamsSchema,
+  listRoomTasksParamsSchema,
   postRoomMessageParamsSchema,
   readRoomMessagesParamsSchema,
+  rejectIncomingRequestParamsSchema,
+  unreadRoomMessageParamsSchema,
+  updateRoomLinkParamsSchema,
+  updateRoomMembersParamsSchema,
+  updateRoomMessageParamsSchema,
+  updateRoomParamsSchema,
+  updateRoomTasksStatusParamsSchema,
 } from './schema';
 import {
+  acceptIncomingRequest,
+  createRoom,
+  createRoomLink,
+  createRoomTask,
+  deleteOrLeaveRoom,
+  deleteRoomLink,
+  deleteRoomMessage,
+  getMe,
+  getMyStatus,
   getRoom,
+  getRoomFile,
+  getRoomLink,
+  getRoomMessage,
+  getRoomTask,
+  listContacts,
+  listIncomingRequests,
+  listMyTasks,
+  listRoomFiles,
+  listRoomMembers,
   listRoomMessages,
   listRooms,
+  listRoomTasks,
   postRoomMessage,
   readRoomMessage,
+  rejectIncomingRequest,
+  unreadRoomMessage,
+  updateRoom,
+  updateRoomLink,
+  updateRoomMembers,
+  updateRoomMessage,
+  updateRoomTaskStatus,
 } from './toolCallbacks';
+
+const DEFAULT_ACTIVE_TOOLS = [
+  'list_accounts',
+  'list_rooms',
+  'get_room',
+  'list_room_messages',
+  'post_room_message',
+  'read_room_messages',
+];
+
+function parseActiveTools(): Set<string> {
+  const env = process.env['CHATWORK_ACTIVE_TOOLS'];
+  if (!env) return new Set(DEFAULT_ACTIVE_TOOLS);
+  return new Set(
+    env
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean),
+  );
+}
 
 const server = new McpServer({
   name: 'Chatwork',
@@ -21,199 +89,255 @@ const server = new McpServer({
   version: '0.0.1',
 });
 
-server.tool(
-  'list_accounts',
-  '利用可能なChatworkアカウントID一覧を返します。',
-  () => ({
-    content: [{ type: 'text', text: listAccounts().join('\n') }],
-  }),
-);
-server.registerTool(
-  'list_rooms',
-  {
-    description: 'チャット一覧を取得します。',
-    inputSchema: listRoomsParamsSchema.shape,
-  },
-  listRooms,
-);
-server.tool(
-  'get_room',
-  'チャットの情報（名前、アイコン、種類など）を取得します。',
-  getRoomParamsSchema.shape,
-  getRoom,
-);
-server.tool(
-  'list_room_messages',
-  'チャットのメッセージ一覧を最大100件まで取得します。',
-  listRoomMessagesParamsSchema.shape,
-  listRoomMessages,
-);
-server.tool(
-  'post_room_message',
-  'チャットに新しいメッセージを投稿します。',
-  postRoomMessageParamsSchema.shape,
-  postRoomMessage,
-);
-server.tool(
-  'read_room_messages',
-  'チャットのメッセージを既読にします。',
-  readRoomMessagesParamsSchema.shape,
-  readRoomMessage,
-);
+const activeTools = parseActiveTools();
+const isActive = (name: string) => activeTools.has(name);
 
-/*
- * コンテキスト削減のため、投稿と該当チャンネル閲覧以外のMCPツールは登録しない。
- * 再有効化する場合は必要なschema/callback importを戻したうえで、対象のserver.toolを戻す。
- *
- * server.tool('get_me', '自分自身の情報を取得します。', getMe);
- * server.tool(
- *   'get_my_status',
- *   '自分の未読数、自分宛ての未読の数、未完了タスク数を取得します。',
- *   getMyStatus,
- * );
- * server.tool(
- *   'list_my_tasks',
- *   '自分のタスク一覧を最大100件まで取得します。',
- *   listMyTasksParamsSchema.shape,
- *   listMyTasks,
- * );
- * server.tool(
- *   'list_contacts',
- *   '自分のコンタクト一覧を取得します。',
- *   listContacts,
- * );
- * server.tool('list_rooms', 'チャット一覧を取得します。', listRooms);
- * server.tool(
- *   'create_room',
- *   '新しいグループチャットを作成します。',
- *   createRoomParamsSchema.shape,
- *   createRoom,
- * );
- * server.tool(
- *   'update_room',
- *   'チャットの情報（名前、アイコンなど）を変更します。',
- *   updateRoomParamsSchema.shape,
- *   updateRoom,
- * );
- * server.tool(
- *   'delete_or_leave_room',
- *   'グループチャットを退席、または削除します。',
- *   deleteOrLeaveRoomParamsSchema.shape,
- *   deleteOrLeaveRoom,
- * );
- * server.tool(
- *   'list_room_members',
- *   'チャットのメンバー一覧を取得します。',
- *   listRoomMembersParamsSchema.shape,
- *   listRoomMembers,
- * );
- * server.tool(
- *   'update_room_members',
- *   'チャットのメンバーを一括で変更します。',
- *   updateRoomMembersParamsSchema.shape,
- *   updateRoomMembers,
- * );
- * server.tool(
- *   'unread_room_message',
- *   'チャットのメッセージを未読にします。',
- *   unreadRoomMessageParamsSchema.shape,
- *   unreadRoomMessage,
- * );
- * server.tool(
- *   'get_room_message',
- *   'チャットのメッセージを取得します。',
- *   getRoomMessageParamsSchema.shape,
- *   getRoomMessage,
- * );
- * server.tool(
- *   'update_room_message',
- *   'チャットのメッセージを更新します。',
- *   updateRoomMessageParamsSchema.shape,
- *   updateRoomMessage,
- * );
- * server.tool(
- *   'delete_room_message',
- *   'チャットのメッセージを削除します。',
- *   deleteRoomMessageParamsSchema.shape,
- *   deleteRoomMessage,
- * );
- * server.tool(
- *   'list_room_tasks',
- *   'チャットのタスク一覧を最大100件まで取得します。',
- *   listRoomTasksParamsSchema.shape,
- *   listRoomTasks,
- * );
- * server.tool(
- *   'create_room_task',
- *   'チャットに新しいタスクを追加します。',
- *   createRoomTaskParamsSchema.shape,
- *   createRoomTask,
- * );
- * server.tool(
- *   'get_room_task',
- *   'チャットのタスクの情報を取得します。',
- *   getRoomTaskParamsSchema.shape,
- *   getRoomTask,
- * );
- * server.tool(
- *   'update_room_task_status',
- *   'チャットのタスクの完了状態を変更します。',
- *   updateRoomTasksStatusParamsSchema.shape,
- *   updateRoomTaskStatus,
- * );
- * server.tool(
- *   'list_room_files',
- *   'チャットのファイル一覧を最大100件まで取得します。',
- *   listRoomFilesParamsSchema.shape,
- *   listRoomFiles,
- * );
- * server.tool(
- *   'get_room_file',
- *   'チャットのファイルの情報を取得します。',
- *   getRoomFileParamsSchema.shape,
- *   getRoomFile,
- * );
- * server.tool(
- *   'get_room_link',
- *   'チャットへの招待リンクを取得します。',
- *   getRoomLinkParamsSchema.shape,
- *   getRoomLink,
- * );
- * server.tool(
- *   'create_room_link',
- *   'チャットへの招待リンクを作成します。',
- *   createRoomLinkParamsSchema.shape,
- *   createRoomLink,
- * );
- * server.tool(
- *   'update_room_link',
- *   'チャットへの招待リンクを変更します。',
- *   updateRoomLinkParamsSchema.shape,
- *   updateRoomLink,
- * );
- * server.tool(
- *   'delete_room_link',
- *   'チャットへの招待リンクを削除します。',
- *   deleteRoomLinkParamsSchema.shape,
- *   deleteRoomLink,
- * );
- * server.tool(
- *   'list_incoming_requests',
- *   '自分へのコンタクト承認依頼一覧を最大100件まで取得します。',
- *   listIncomingRequests,
- * );
- * server.tool(
- *   'accept_incoming_request',
- *   '自分へのコンタクト承認依頼を承認します。',
- *   acceptIncomingRequestParamsSchema.shape,
- *   acceptIncomingRequest,
- * );
- * server.tool(
- *   'reject_incoming_request',
- *   '自分へのコンタクト承認依頼を拒否します。',
- *   rejectIncomingRequestParamsSchema.shape,
- *   rejectIncomingRequest,
- * );
- */
+if (isActive('list_accounts')) {
+  server.tool(
+    'list_accounts',
+    '利用可能なChatworkアカウントID一覧を返します。',
+    () => ({
+      content: [{ type: 'text', text: listAccounts().join('\n') }],
+    }),
+  );
+}
+if (isActive('get_me')) {
+  server.tool('get_me', '自分自身の情報を取得します。', getMe);
+}
+if (isActive('get_my_status')) {
+  server.tool(
+    'get_my_status',
+    '自分の未読数、自分宛ての未読の数、未完了タスク数を取得します。',
+    getMyStatus,
+  );
+}
+if (isActive('list_my_tasks')) {
+  server.tool(
+    'list_my_tasks',
+    '自分のタスク一覧を最大100件まで取得します。',
+    listMyTasksParamsSchema.shape,
+    listMyTasks,
+  );
+}
+if (isActive('list_contacts')) {
+  server.tool('list_contacts', '自分のコンタクト一覧を取得します。', listContacts);
+}
+if (isActive('list_rooms')) {
+  server.registerTool(
+    'list_rooms',
+    {
+      description: 'チャット一覧を取得します。',
+      inputSchema: listRoomsParamsSchema.shape,
+    },
+    listRooms,
+  );
+}
+if (isActive('create_room')) {
+  server.tool(
+    'create_room',
+    '新しいグループチャットを作成します。',
+    createRoomParamsSchema.shape,
+    createRoom,
+  );
+}
+if (isActive('get_room')) {
+  server.tool(
+    'get_room',
+    'チャットの情報（名前、アイコン、種類など）を取得します。',
+    getRoomParamsSchema.shape,
+    getRoom,
+  );
+}
+if (isActive('update_room')) {
+  server.tool(
+    'update_room',
+    'チャットの情報（名前、アイコンなど）を変更します。',
+    updateRoomParamsSchema.shape,
+    updateRoom,
+  );
+}
+if (isActive('delete_or_leave_room')) {
+  server.tool(
+    'delete_or_leave_room',
+    'グループチャットを退席、または削除します。',
+    deleteOrLeaveRoomParamsSchema.shape,
+    deleteOrLeaveRoom,
+  );
+}
+if (isActive('list_room_members')) {
+  server.tool(
+    'list_room_members',
+    'チャットのメンバー一覧を取得します。',
+    listRoomMembersParamsSchema.shape,
+    listRoomMembers,
+  );
+}
+if (isActive('update_room_members')) {
+  server.tool(
+    'update_room_members',
+    'チャットのメンバーを一括で変更します。',
+    updateRoomMembersParamsSchema.shape,
+    updateRoomMembers,
+  );
+}
+if (isActive('list_room_messages')) {
+  server.tool(
+    'list_room_messages',
+    'チャットのメッセージ一覧を最大100件まで取得します。',
+    listRoomMessagesParamsSchema.shape,
+    listRoomMessages,
+  );
+}
+if (isActive('post_room_message')) {
+  server.tool(
+    'post_room_message',
+    'チャットに新しいメッセージを投稿します。',
+    postRoomMessageParamsSchema.shape,
+    postRoomMessage,
+  );
+}
+if (isActive('read_room_messages')) {
+  server.tool(
+    'read_room_messages',
+    'チャットのメッセージを既読にします。',
+    readRoomMessagesParamsSchema.shape,
+    readRoomMessage,
+  );
+}
+if (isActive('unread_room_message')) {
+  server.tool(
+    'unread_room_message',
+    'チャットのメッセージを未読にします。',
+    unreadRoomMessageParamsSchema.shape,
+    unreadRoomMessage,
+  );
+}
+if (isActive('get_room_message')) {
+  server.tool(
+    'get_room_message',
+    'チャットのメッセージを取得します。',
+    getRoomMessageParamsSchema.shape,
+    getRoomMessage,
+  );
+}
+if (isActive('update_room_message')) {
+  server.tool(
+    'update_room_message',
+    'チャットのメッセージを更新します。',
+    updateRoomMessageParamsSchema.shape,
+    updateRoomMessage,
+  );
+}
+if (isActive('delete_room_message')) {
+  server.tool(
+    'delete_room_message',
+    'チャットのメッセージを削除します。',
+    deleteRoomMessageParamsSchema.shape,
+    deleteRoomMessage,
+  );
+}
+if (isActive('list_room_tasks')) {
+  server.tool(
+    'list_room_tasks',
+    'チャットのタスク一覧を最大100件まで取得します。',
+    listRoomTasksParamsSchema.shape,
+    listRoomTasks,
+  );
+}
+if (isActive('create_room_task')) {
+  server.tool(
+    'create_room_task',
+    'チャットに新しいタスクを追加します。',
+    createRoomTaskParamsSchema.shape,
+    createRoomTask,
+  );
+}
+if (isActive('get_room_task')) {
+  server.tool(
+    'get_room_task',
+    'チャットのタスクの情報を取得します。',
+    getRoomTaskParamsSchema.shape,
+    getRoomTask,
+  );
+}
+if (isActive('update_room_task_status')) {
+  server.tool(
+    'update_room_task_status',
+    'チャットのタスクの完了状態を変更します。',
+    updateRoomTasksStatusParamsSchema.shape,
+    updateRoomTaskStatus,
+  );
+}
+if (isActive('list_room_files')) {
+  server.tool(
+    'list_room_files',
+    'チャットのファイル一覧を最大100件まで取得します。',
+    listRoomFilesParamsSchema.shape,
+    listRoomFiles,
+  );
+}
+if (isActive('get_room_file')) {
+  server.tool(
+    'get_room_file',
+    'チャットのファイルの情報を取得します。',
+    getRoomFileParamsSchema.shape,
+    getRoomFile,
+  );
+}
+if (isActive('get_room_link')) {
+  server.tool(
+    'get_room_link',
+    'チャットへの招待リンクを取得します。',
+    getRoomLinkParamsSchema.shape,
+    getRoomLink,
+  );
+}
+if (isActive('create_room_link')) {
+  server.tool(
+    'create_room_link',
+    'チャットへの招待リンクを作成します。',
+    createRoomLinkParamsSchema.shape,
+    createRoomLink,
+  );
+}
+if (isActive('update_room_link')) {
+  server.tool(
+    'update_room_link',
+    'チャットへの招待リンクを変更します。',
+    updateRoomLinkParamsSchema.shape,
+    updateRoomLink,
+  );
+}
+if (isActive('delete_room_link')) {
+  server.tool(
+    'delete_room_link',
+    'チャットへの招待リンクを削除します。',
+    deleteRoomLinkParamsSchema.shape,
+    deleteRoomLink,
+  );
+}
+if (isActive('list_incoming_requests')) {
+  server.tool(
+    'list_incoming_requests',
+    '自分へのコンタクト承認依頼一覧を最大100件まで取得します。',
+    listIncomingRequests,
+  );
+}
+if (isActive('accept_incoming_request')) {
+  server.tool(
+    'accept_incoming_request',
+    '自分へのコンタクト承認依頼を承認します。',
+    acceptIncomingRequestParamsSchema.shape,
+    acceptIncomingRequest,
+  );
+}
+if (isActive('reject_incoming_request')) {
+  server.tool(
+    'reject_incoming_request',
+    '自分へのコンタクト承認依頼を拒否します。',
+    rejectIncomingRequestParamsSchema.shape,
+    rejectIncomingRequest,
+  );
+}
 
 export { server };
