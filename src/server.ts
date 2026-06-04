@@ -3,12 +3,14 @@ import { listAccounts } from './chatworkClient';
 import {
   getRoomParamsSchema,
   listRoomMessagesParamsSchema,
+  listRoomsParamsSchema,
   postRoomMessageParamsSchema,
   readRoomMessagesParamsSchema,
 } from './schema';
 import {
   getRoom,
   listRoomMessages,
+  listRooms,
   postRoomMessage,
   readRoomMessage,
 } from './toolCallbacks';
@@ -25,6 +27,14 @@ server.tool(
   () => ({
     content: [{ type: 'text', text: listAccounts().join('\n') }],
   }),
+);
+server.registerTool(
+  'list_rooms',
+  {
+    description: 'チャット一覧を取得します。',
+    inputSchema: listRoomsParamsSchema.shape,
+  },
+  listRooms,
 );
 server.tool(
   'get_room',
