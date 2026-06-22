@@ -1,5 +1,10 @@
 # Chatwork MCP Server (Multi-Account)
 
+> ### 🚀 Powered by [GridJapan株式会社](https://ai.gridjapan.com/)
+> **GridAI** — 業務に AI を組み込み、開発・運用・営業を自動化する AI ソリューション。
+> 本リポジトリは GridJapan の AI 開発の一環として公開しています。
+> 詳細・お問い合わせ → **https://ai.gridjapan.com/**
+
 AI から Chatwork にメッセージを届けたり、部屋の様子を見に行ったりできる MCP (Model Context Protocol) サーバーです。
 
 複数アカウント対応。`CHATWORK_ACCOUNTS` 環境変数でアカウントを列挙し、投稿時に `account_id` で切り替えられます。

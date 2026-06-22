@@ -65,25 +65,63 @@ import {
 
 const PRESETS: Record<string, string[]> = {
   '0': [
-    'list_accounts', 'get_me', 'get_my_status', 'list_my_tasks', 'list_contacts',
-    'list_rooms', 'get_room', 'update_room', 'list_room_members',
-    'list_room_messages', 'post_room_message', 'read_room_messages',
-    'unread_room_message', 'get_room_message', 'update_room_message', 'delete_room_message',
-    'list_room_tasks', 'create_room_task', 'get_room_task', 'update_room_task_status',
-    'list_room_files', 'get_room_file',
-    'get_room_link', 'create_room_link', 'update_room_link', 'delete_room_link',
-    'list_incoming_requests', 'accept_incoming_request', 'reject_incoming_request',
+    'list_accounts',
+    'get_me',
+    'get_my_status',
+    'list_my_tasks',
+    'list_contacts',
+    'list_rooms',
+    'get_room',
+    'update_room',
+    'list_room_members',
+    'list_room_messages',
+    'post_room_message',
+    'read_room_messages',
+    'unread_room_message',
+    'get_room_message',
+    'update_room_message',
+    'delete_room_message',
+    'list_room_tasks',
+    'create_room_task',
+    'get_room_task',
+    'update_room_task_status',
+    'list_room_files',
+    'get_room_file',
+    'get_room_link',
+    'create_room_link',
+    'update_room_link',
+    'delete_room_link',
+    'list_incoming_requests',
+    'accept_incoming_request',
+    'reject_incoming_request',
   ],
   '1': [
-    'list_accounts', 'get_me', 'get_my_status', 'list_my_tasks', 'list_contacts',
-    'list_rooms', 'get_room', 'list_room_members',
-    'list_room_messages', 'post_room_message', 'read_room_messages', 'get_room_message',
-    'list_room_tasks', 'get_room_task',
-    'list_room_files', 'get_room_file',
+    'list_accounts',
+    'get_me',
+    'get_my_status',
+    'list_my_tasks',
+    'list_contacts',
+    'list_rooms',
+    'get_room',
+    'list_room_members',
+    'list_room_messages',
+    'post_room_message',
+    'read_room_messages',
+    'get_room_message',
+    'list_room_tasks',
+    'get_room_task',
+    'list_room_files',
+    'get_room_file',
   ],
   '2': [
-    'list_accounts', 'list_rooms', 'get_room', 'list_room_members',
-    'list_room_messages', 'post_room_message', 'read_room_messages', 'get_room_message',
+    'list_accounts',
+    'list_rooms',
+    'get_room',
+    'list_room_members',
+    'list_room_messages',
+    'post_room_message',
+    'read_room_messages',
+    'get_room_message',
   ],
 };
 
@@ -92,7 +130,12 @@ const DEFAULT_ACTIVE_TOOLS = PRESETS['2'];
 function parseActiveTools(): Set<string> {
   const individual = process.env['CHATWORK_ACTIVE_TOOLS'];
   if (individual) {
-    return new Set(individual.split(',').map((t) => t.trim()).filter(Boolean));
+    return new Set(
+      individual
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean),
+    );
   }
   const preset = process.env['CHATWORK_TOOL_PRESET'];
   if (preset && PRESETS[preset]) {
