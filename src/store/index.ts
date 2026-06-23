@@ -7,9 +7,9 @@ export const store = configureStore({
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      // Disable serializability check for Date objects in TTL
+      // Disable serializability check for the per-account rooms cache subtree
       serializableCheck: {
-        ignoredPaths: ['rooms.rooms.timestamp'],
+        ignoredPaths: ['rooms.byAccount'],
       },
     }),
 });

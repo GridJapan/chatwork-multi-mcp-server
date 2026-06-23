@@ -7,33 +7,48 @@ interface CachedData<T> {
   ttl: number;
 }
 
+/**
+ * ルーム一覧キャッシュはアカウント（解決済みキー）ごとに分離する。
+ * マルチアカウント運用で、あるアカウントのルームが別アカウントへ漏れないようにするため。
+ */
 interface RoomsState {
-  rooms: CachedData<Room[]> | null;
+  byAccount: Record<string, CachedData<Room[]>>;
 }
 
 const initialState: RoomsState = {
-  rooms: null,
+  byAccount: {},
 };
 
 const roomsSlice = createSlice({
   name: 'rooms',
   initialState,
   reducers: {
-    setRooms: (state, action: PayloadAction<{ data: Room[]; ttl: number }>) => {
-      state.rooms = {
+    setRooms: (
+      state,
+      action: PayloadAction<{ account: string; data: Room[]; ttl: number }>,
+    ) => {
+      state.byAccount[action.payload.account] = {
         data: action.payload.data,
         timestamp: Date.now(),
         ttl: action.payload.ttl,
       };
     },
-    clearRooms: (state) => {
-      state.rooms = null;
+    clearRooms: (
+      state,
+      action: PayloadAction<{ account?: string } | undefined>,
+    ) => {
+      const account = action?.payload?.account;
+      if (account) {
+        delete state.byAccount[account];
+      } else {
+        state.byAccount = {};
+      }
     },
     cleanExpiredData: (state) => {
-      if (state.rooms) {
-        const now = Date.now();
-        if (now - state.rooms.timestamp > state.rooms.ttl) {
-          state.rooms = null;
+      const now = Date.now();
+      for (const [account, cached] of Object.entries(state.byAccount)) {
+        if (now - cached.timestamp > cached.ttl) {
+          delete state.byAccount[account];
         }
       }
     },
@@ -43,12 +58,14 @@ const roomsSlice = createSlice({
 export const { setRooms, clearRooms, cleanExpiredData } = roomsSlice.actions;
 
 // Selectors
-export const selectRooms = (state: { rooms: RoomsState }): Room[] | null => {
-  if (!state.rooms.rooms) return null;
+export const selectRooms = (
+  state: { rooms: RoomsState },
+  account: string,
+): Room[] | null => {
+  const cachedData = state.rooms.byAccount[account];
+  if (!cachedData) return null;
 
   const now = Date.now();
-  const cachedData = state.rooms.rooms;
-
   if (now - cachedData.timestamp > cachedData.ttl) {
     return null;
   }
@@ -58,10 +75,11 @@ export const selectRooms = (state: { rooms: RoomsState }): Room[] | null => {
 
 export const selectPaginatedRooms = (
   state: { rooms: RoomsState },
+  account: string,
   offset: number = 0,
   limit: number = 100,
 ): Room[] | null => {
-  const rooms = selectRooms(state);
+  const rooms = selectRooms(state, account);
   if (!rooms) return null;
 
   return rooms.slice(offset, offset + limit);

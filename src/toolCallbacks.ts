@@ -1,9 +1,14 @@
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
-import { chatworkClient, ChatworkClientResponse } from './chatworkClient';
+import {
+  chatworkClient,
+  resolveAccountId,
+  ChatworkClientResponse,
+} from './chatworkClient';
 import { store, setRooms, selectPaginatedRooms } from './store';
 import { validateRoomsArray } from './types/room';
 import {
   acceptIncomingRequestParamsSchema,
+  accountOnlyParamsSchema,
   createRoomLinkParamsSchema,
   createRoomParamsSchema,
   createRoomTaskParamsSchema,
@@ -72,8 +77,8 @@ function chatworkClientResponseToCallToolResult(
   };
 }
 
-export const getMe = () =>
-  chatworkClient()
+export const getMe = (req: z.infer<typeof accountOnlyParamsSchema>) =>
+  chatworkClient(req.account_id)
     .request({
       path: '/me',
       method: 'GET',
@@ -82,8 +87,8 @@ export const getMe = () =>
     })
     .then(chatworkClientResponseToCallToolResult);
 
-export const getMyStatus = () =>
-  chatworkClient()
+export const getMyStatus = (req: z.infer<typeof accountOnlyParamsSchema>) =>
+  chatworkClient(req.account_id)
     .request({
       path: '/my/status',
       method: 'GET',
@@ -93,7 +98,7 @@ export const getMyStatus = () =>
     .then(chatworkClientResponseToCallToolResult);
 
 export const listMyTasks = (req: z.infer<typeof listMyTasksParamsSchema>) =>
-  chatworkClient()
+  chatworkClient(req.account_id)
     .request({
       path: '/my/tasks',
       method: 'GET',
@@ -102,8 +107,8 @@ export const listMyTasks = (req: z.infer<typeof listMyTasksParamsSchema>) =>
     })
     .then(chatworkClientResponseToCallToolResult);
 
-export const listContacts = () =>
-  chatworkClient()
+export const listContacts = (req: z.infer<typeof accountOnlyParamsSchema>) =>
+  chatworkClient(req.account_id)
     .request({
       path: '/contacts',
       method: 'GET',
@@ -119,12 +124,20 @@ export const listRooms = async (
 
   const CACHE_TTL = 5 * 60 * 1000; // 5分
 
-  // Check if we have cached rooms
-  let paginatedRooms = selectPaginatedRooms(store.getState(), offset, limit);
+  // キャッシュはアカウント（解決済みキー）ごとに分離する
+  const account = resolveAccountId(args.account_id);
+
+  // Check if we have cached rooms for this account
+  let paginatedRooms = selectPaginatedRooms(
+    store.getState(),
+    account,
+    offset,
+    limit,
+  );
 
   if (!paginatedRooms) {
     // Cache miss or expired - fetch from API
-    const response = await chatworkClient().request({
+    const response = await chatworkClient(args.account_id).request({
       path: '/rooms',
       method: 'GET',
       query: {},
@@ -137,12 +150,12 @@ export const listRooms = async (
 
     const allRooms = validateRoomsArray(JSON.parse(response.response));
 
-    // Store in Redux with TTL
-    store.dispatch(setRooms({ data: allRooms, ttl: CACHE_TTL }));
+    // Store in Redux with TTL, keyed by account
+    store.dispatch(setRooms({ account, data: allRooms, ttl: CACHE_TTL }));
 
     // Get paginated data from updated store
     paginatedRooms =
-      selectPaginatedRooms(store.getState(), offset, limit) || [];
+      selectPaginatedRooms(store.getState(), account, offset, limit) || [];
   }
 
   const paginatedResponse: ChatworkClientResponse = {
@@ -156,7 +169,7 @@ export const listRooms = async (
 };
 
 export const createRoom = (req: z.infer<typeof createRoomParamsSchema>) =>
-  chatworkClient()
+  chatworkClient(req.account_id)
     .request({
       path: '/rooms',
       method: 'POST',
@@ -166,7 +179,7 @@ export const createRoom = (req: z.infer<typeof createRoomParamsSchema>) =>
     .then(chatworkClientResponseToCallToolResult);
 
 export const getRoom = (req: z.infer<typeof getRoomParamsSchema>) =>
-  chatworkClient()
+  chatworkClient(req.account_id)
     .request({
       path: `/rooms/${req.path.room_id}`,
       method: 'GET',
@@ -176,7 +189,7 @@ export const getRoom = (req: z.infer<typeof getRoomParamsSchema>) =>
     .then(chatworkClientResponseToCallToolResult);
 
 export const updateRoom = (req: z.infer<typeof updateRoomParamsSchema>) =>
-  chatworkClient()
+  chatworkClient(req.account_id)
     .request({
       path: `/rooms/${req.path.room_id}`,
       method: 'PUT',
@@ -188,7 +201,7 @@ export const updateRoom = (req: z.infer<typeof updateRoomParamsSchema>) =>
 export const deleteOrLeaveRoom = (
   req: z.infer<typeof deleteOrLeaveRoomParamsSchema>,
 ) =>
-  chatworkClient()
+  chatworkClient(req.account_id)
     .request({
       path: `/rooms/${req.path.room_id}`,
       method: 'DELETE',
@@ -200,7 +213,7 @@ export const deleteOrLeaveRoom = (
 export const listRoomMembers = (
   req: z.infer<typeof listRoomMembersParamsSchema>,
 ) =>
-  chatworkClient()
+  chatworkClient(req.account_id)
     .request({
       path: `/rooms/${req.path.room_id}/members`,
       method: 'GET',
@@ -212,7 +225,7 @@ export const listRoomMembers = (
 export const updateRoomMembers = (
   req: z.infer<typeof updateRoomMembersParamsSchema>,
 ) =>
-  chatworkClient()
+  chatworkClient(req.account_id)
     .request({
       path: `/rooms/${req.path.room_id}/members`,
       method: 'PUT',
@@ -224,7 +237,7 @@ export const updateRoomMembers = (
 export const listRoomMessages = (
   req: z.infer<typeof listRoomMessagesParamsSchema>,
 ) =>
-  chatworkClient()
+  chatworkClient(req.account_id)
     .request({
       path: `/rooms/${req.path.room_id}/messages`,
       method: 'GET',
@@ -272,7 +285,7 @@ export const unreadRoomMessage = (
 export const getRoomMessage = (
   req: z.infer<typeof getRoomMessageParamsSchema>,
 ) =>
-  chatworkClient()
+  chatworkClient(req.account_id)
     .request({
       path: `/rooms/${req.path.room_id}/messages/${req.path.message_id}`,
       method: 'GET',
@@ -306,7 +319,7 @@ export const deleteRoomMessage = (
     .then(chatworkClientResponseToCallToolResult);
 
 export const listRoomTasks = (req: z.infer<typeof listRoomTasksParamsSchema>) =>
-  chatworkClient()
+  chatworkClient(req.account_id)
     .request({
       path: `/rooms/${req.path.room_id}/tasks`,
       method: 'GET',
@@ -328,7 +341,7 @@ export const createRoomTask = (
     .then(chatworkClientResponseToCallToolResult);
 
 export const getRoomTask = (req: z.infer<typeof getRoomTaskParamsSchema>) =>
-  chatworkClient()
+  chatworkClient(req.account_id)
     .request({
       path: `/rooms/${req.path.room_id}/tasks/${req.path.task_id}`,
       method: 'GET',
@@ -350,17 +363,17 @@ export const updateRoomTaskStatus = (
     .then(chatworkClientResponseToCallToolResult);
 
 export const listRoomFiles = (req: z.infer<typeof listRoomFilesParamsSchema>) =>
-  chatworkClient()
+  chatworkClient(req.account_id)
     .request({
       path: `/rooms/${req.path.room_id}/files`,
       method: 'GET',
-      query: {},
+      query: req.query,
       body: {},
     })
     .then(chatworkClientResponseToCallToolResult);
 
 export const getRoomFile = (req: z.infer<typeof getRoomFileParamsSchema>) =>
-  chatworkClient()
+  chatworkClient(req.account_id)
     .request({
       path: `/rooms/${req.path.room_id}/files/${req.path.file_id}`,
       method: 'GET',
@@ -370,7 +383,7 @@ export const getRoomFile = (req: z.infer<typeof getRoomFileParamsSchema>) =>
     .then(chatworkClientResponseToCallToolResult);
 
 export const getRoomLink = (req: z.infer<typeof getRoomLinkParamsSchema>) =>
-  chatworkClient()
+  chatworkClient(req.account_id)
     .request({
       path: `/rooms/${req.path.room_id}/link`,
       method: 'GET',
@@ -382,7 +395,7 @@ export const getRoomLink = (req: z.infer<typeof getRoomLinkParamsSchema>) =>
 export const createRoomLink = (
   req: z.infer<typeof createRoomLinkParamsSchema>,
 ) =>
-  chatworkClient()
+  chatworkClient(req.account_id)
     .request({
       path: `/rooms/${req.path.room_id}/link`,
       method: 'POST',
@@ -394,7 +407,7 @@ export const createRoomLink = (
 export const updateRoomLink = (
   req: z.infer<typeof updateRoomLinkParamsSchema>,
 ) =>
-  chatworkClient()
+  chatworkClient(req.account_id)
     .request({
       path: `/rooms/${req.path.room_id}/link`,
       method: 'PUT',
@@ -406,7 +419,7 @@ export const updateRoomLink = (
 export const deleteRoomLink = (
   req: z.infer<typeof deleteRoomLinkParamsSchema>,
 ) =>
-  chatworkClient()
+  chatworkClient(req.account_id)
     .request({
       path: `/rooms/${req.path.room_id}/link`,
       method: 'DELETE',
@@ -415,8 +428,10 @@ export const deleteRoomLink = (
     })
     .then(chatworkClientResponseToCallToolResult);
 
-export const listIncomingRequests = () =>
-  chatworkClient()
+export const listIncomingRequests = (
+  req: z.infer<typeof accountOnlyParamsSchema>,
+) =>
+  chatworkClient(req.account_id)
     .request({
       path: '/incoming_requests',
       method: 'GET',
@@ -428,7 +443,7 @@ export const listIncomingRequests = () =>
 export const acceptIncomingRequest = (
   req: z.infer<typeof acceptIncomingRequestParamsSchema>,
 ) =>
-  chatworkClient()
+  chatworkClient(req.account_id)
     .request({
       path: `/incoming_requests/${req.path.request_id}/accept`,
       method: 'PUT',
@@ -440,7 +455,7 @@ export const acceptIncomingRequest = (
 export const rejectIncomingRequest = (
   req: z.infer<typeof rejectIncomingRequestParamsSchema>,
 ) =>
-  chatworkClient()
+  chatworkClient(req.account_id)
     .request({
       path: `/incoming_requests/${req.path.request_id}/reject`,
       method: 'DELETE',

@@ -7,7 +7,8 @@ import { z } from 'zod';
 export const roomSchema = z.object({
   room_id: z.number().int().positive().describe('ルームID'),
 
-  name: z.string().min(1).describe('ルーム名'),
+  // ダイレクト/マイチャット等で空文字になり得るため min(1) は課さない
+  name: z.string().describe('ルーム名'),
 
   type: z
     .enum(['my', 'direct', 'group'])
@@ -35,12 +36,14 @@ export const roomSchema = z.object({
 
   task_num: z.number().int().min(0).describe('タスク数'),
 
-  icon_path: z.string().url().describe('ルームアイコンのURL'),
+  // アイコン未設定ルームでは空文字になり得るため url() は課さない
+  icon_path: z.string().describe('ルームアイコンのURL'),
 
+  // 無活動ルームでは 0 が返るため positive() ではなく min(0)
   last_update_time: z
     .number()
     .int()
-    .positive()
+    .min(0)
     .describe('最終更新日時 (UNIX timestamp)'),
 });
 

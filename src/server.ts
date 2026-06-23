@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { listAccounts } from './chatworkClient';
 import {
   acceptIncomingRequestParamsSchema,
+  accountOnlyParamsSchema,
   createRoomLinkParamsSchema,
   createRoomParamsSchema,
   createRoomTaskParamsSchema,
@@ -163,12 +164,18 @@ if (isActive('list_accounts')) {
   );
 }
 if (isActive('get_me')) {
-  server.tool('get_me', '自分自身の情報を取得します。', getMe);
+  server.tool(
+    'get_me',
+    '自分自身の情報を取得します。',
+    accountOnlyParamsSchema.shape,
+    getMe,
+  );
 }
 if (isActive('get_my_status')) {
   server.tool(
     'get_my_status',
     '自分の未読数、自分宛ての未読の数、未完了タスク数を取得します。',
+    accountOnlyParamsSchema.shape,
     getMyStatus,
   );
 }
@@ -184,6 +191,7 @@ if (isActive('list_contacts')) {
   server.tool(
     'list_contacts',
     '自分のコンタクト一覧を取得します。',
+    accountOnlyParamsSchema.shape,
     listContacts,
   );
 }
@@ -385,6 +393,7 @@ if (isActive('list_incoming_requests')) {
   server.tool(
     'list_incoming_requests',
     '自分へのコンタクト承認依頼一覧を最大100件まで取得します。',
+    accountOnlyParamsSchema.shape,
     listIncomingRequests,
   );
 }
