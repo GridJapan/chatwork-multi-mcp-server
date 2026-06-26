@@ -95,6 +95,7 @@ const PRESETS: Record<string, string[]> = {
     'list_incoming_requests',
     'accept_incoming_request',
     'reject_incoming_request',
+    'update_room_members',
   ],
   '1': [
     'list_accounts',
