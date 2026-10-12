@@ -8,6 +8,14 @@ const accountIdSchema = z
       '省略時は default（CHATWORK_API_TOKEN）→ CHATWORK_DEFAULT_ACCOUNT →（アカウントが1件ならそれ）の順で解決。',
   );
 
+/**
+ * メッセージID。Chatwork のメッセージIDは数字だけの文字列。
+ * API の URL パスに埋め込むため、数字以外（`/` や `..` など）を受け付けない。
+ */
+const messageIdSchema = z
+  .string()
+  .regex(/^\d+$/, 'メッセージIDは数字のみで指定してください');
+
 /** account_id のみを受け取る（引数を持たないツール用）。 */
 export const accountOnlyParamsSchema = z
   .object({
@@ -218,7 +226,7 @@ export const readRoomMessagesParamsSchema = z
       room_id: z.number().int().describe('ルームID'),
     }),
     body: z.object({
-      message_id: z.string().optional().describe('既読にするメッセージID'),
+      message_id: messageIdSchema.optional().describe('既読にするメッセージID'),
     }),
   })
   .describe('チャットメッセージ既読化');
@@ -231,7 +239,7 @@ export const unreadRoomMessageParamsSchema = z
       room_id: z.number().int().describe('ルームID'),
     }),
     body: z.object({
-      message_id: z.string().describe('未読にするメッセージID'),
+      message_id: messageIdSchema.describe('未読にするメッセージID'),
     }),
   })
   .describe('チャットメッセージ未読化');
@@ -242,7 +250,7 @@ export const getRoomMessageParamsSchema = z
     account_id: accountIdSchema,
     path: z.object({
       room_id: z.number().int().describe('ルームID'),
-      message_id: z.string().describe('メッセージID'),
+      message_id: messageIdSchema.describe('メッセージID'),
     }),
   })
   .describe('チャットメッセージ取得');
@@ -253,7 +261,7 @@ export const updateRoomMessageParamsSchema = z
     account_id: accountIdSchema,
     path: z.object({
       room_id: z.number().int().describe('ルームID'),
-      message_id: z.string().describe('メッセージID'),
+      message_id: messageIdSchema.describe('メッセージID'),
     }),
     body: z.object({
       body: z.string().describe('更新後のメッセージ本文'),
@@ -267,7 +275,7 @@ export const deleteRoomMessageParamsSchema = z
     account_id: accountIdSchema,
     path: z.object({
       room_id: z.number().int().describe('ルームID'),
-      message_id: z.string().describe('メッセージID'),
+      message_id: messageIdSchema.describe('メッセージID'),
     }),
   })
   .describe('チャットメッセージ削除');
